@@ -1,4 +1,4 @@
-# Copyright (c) 2013-2019, Intel Corporation
+# Copyright (c) 2013-2021, Intel Corporation
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -36,7 +36,7 @@ project(PT C)
 # a build number and a version extension can be optionally specified.
 #
 set(PT_VERSION_MAJOR 2)
-set(PT_VERSION_MINOR 0)
+set(PT_VERSION_MINOR 1)
 set(PT_VERSION_PATCH 0)
 set(PT_VERSION_BUILD "0" CACHE STRING "")
 set(PT_VERSION_EXT "" CACHE STRING "")

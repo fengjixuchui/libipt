@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2019, Intel Corporation
+ * Copyright (c) 2013-2021, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -294,17 +294,16 @@ static void help(const char *name)
 #endif /* defined(FEATURE_ELF) */
 	printf("  --raw <file>[:<from>[-<to>]]:<base>  load a raw binary from <file> at address <base>.\n");
 	printf("                                       an optional offset or range can be given.\n");
-	printf("  --cpu none|auto|f/m[/s]              set cpu to the given value and decode according to:\n");
+	printf("  --cpu none|f/m[/s]                   set cpu to the given value and decode according to:\n");
 	printf("                                         none     spec (default)\n");
-	printf("                                         auto     current cpu\n");
 	printf("                                         f/m[/s]  family/model[/stepping]\n");
 	printf("  --mtc-freq <n>                       set the MTC frequency (IA32_RTIT_CTL[17:14]) to <n>.\n");
 	printf("  --nom-freq <n>                       set the nominal frequency (MSR_PLATFORM_INFO[15:8]) to <n>.\n");
 	printf("  --cpuid-0x15.eax                     set the value of cpuid[0x15].eax.\n");
 	printf("  --cpuid-0x15.ebx                     set the value of cpuid[0x15].ebx.\n");
-	printf("  --insn-decoder                       use the instruction flow decoder (default).\n");
+	printf("  --insn-decoder                       use the instruction flow decoder.\n");
 	printf("  --insn:keep-tcal-on-ovf              preserve timing calibration on overflow.\n");
-	printf("  --block-decoder                      use the block decoder.\n");
+	printf("  --block-decoder                      use the block decoder (default).\n");
 	printf("  --block:show-blocks                  show blocks in the output.\n");
 	printf("  --block:end-on-call                  set the end-on-call block decoder flag.\n");
 	printf("  --block:end-on-jump                  set the end-on-jump block decoder flag.\n");
@@ -617,8 +616,8 @@ static xed_machine_mode_enum_t translate_mode(enum pt_exec_mode mode)
 static const char *visualize_iclass(enum pt_insn_class iclass)
 {
 	switch (iclass) {
-	case ptic_error:
-		return "unknown/error";
+	case ptic_unknown:
+		return "unknown";
 
 	case ptic_other:
 		return "other";
@@ -646,6 +645,9 @@ static const char *visualize_iclass(enum pt_insn_class iclass)
 
 	case ptic_ptwrite:
 		return "ptwrite";
+
+	case ptic_indirect:
+		return "indirect";
 	}
 
 	return "undefined";
@@ -666,7 +668,7 @@ static void check_insn_iclass(const xed_inst_t *inst,
 	iclass = xed_inst_iclass(inst);
 
 	switch (insn->iclass) {
-	case ptic_error:
+	case ptic_unknown:
 		break;
 
 	case ptic_ptwrite:
@@ -770,6 +772,36 @@ static void check_insn_iclass(const xed_inst_t *inst,
 			return;
 
 		break;
+
+	case ptic_indirect:
+		switch (iclass) {
+		default:
+			break;
+
+		case XED_ICLASS_CALL_FAR:
+		case XED_ICLASS_INT:
+		case XED_ICLASS_INT1:
+		case XED_ICLASS_INT3:
+		case XED_ICLASS_INTO:
+		case XED_ICLASS_SYSCALL:
+		case XED_ICLASS_SYSCALL_AMD:
+		case XED_ICLASS_SYSENTER:
+		case XED_ICLASS_VMCALL:
+		case XED_ICLASS_RET_FAR:
+		case XED_ICLASS_IRET:
+		case XED_ICLASS_IRETD:
+		case XED_ICLASS_IRETQ:
+		case XED_ICLASS_SYSRET:
+		case XED_ICLASS_SYSRET_AMD:
+		case XED_ICLASS_SYSEXIT:
+		case XED_ICLASS_VMLAUNCH:
+		case XED_ICLASS_VMRESUME:
+		case XED_ICLASS_JMP_FAR:
+		case XED_ICLASS_JMP:
+			return;
+		}
+		break;
+
 	}
 
 	/* If we get here, @insn->iclass doesn't match XED's classification. */
@@ -1151,6 +1183,20 @@ static void print_event(const struct pt_event *event,
 	case ptev_mnt:
 		printf("mnt: %" PRIx64, event->variant.mnt.payload);
 		break;
+
+	case ptev_tip:
+		printf("tip: %" PRIx64, event->variant.tip.ip);
+		break;
+
+	case ptev_tnt: {
+		uint64_t index;
+
+		printf("tnt: ");
+		for (index = event->variant.tnt.size; index; index >>= 1)
+			printf("%s",
+			       (event->variant.tnt.bits & index) ? "!" : ".");
+	}
+		break;
 	}
 
 	printf("]\n");
@@ -1338,7 +1384,7 @@ static void decode_insn(struct ptxed_decoder *decoder,
 				/* Even in case of errors, we may have succeeded
 				 * in decoding the current instruction.
 				 */
-				if (insn.iclass != ptic_error) {
+				if (insn.iclass != ptic_unknown) {
 					if (!options->quiet)
 						print_insn(&insn, &xed, options,
 							   offset, time);
@@ -2711,18 +2757,6 @@ extern int main(int argc, char *argv[])
 				goto out;
 			}
 			arg = argv[i++];
-
-			if (strcmp(arg, "auto") == 0) {
-				errcode = pt_cpu_read(&config.cpu);
-				if (errcode < 0) {
-					fprintf(stderr,
-						"%s: error reading cpu: %s.\n",
-						prog,
-						pt_errstr(pt_errcode(errcode)));
-					return 1;
-				}
-				continue;
-			}
 
 			if (strcmp(arg, "none") == 0) {
 				memset(&config.cpu, 0, sizeof(config.cpu));

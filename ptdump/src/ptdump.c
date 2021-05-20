@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2019, Intel Corporation
+ * Copyright (c) 2013-2021, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -242,9 +242,8 @@ static int help(const char *name)
 	printf("  --pevent:vdso-ia32 <file>   ignored.\n");
 #endif /* defined(FEATURE_PEVENT) */
 #endif /* defined(FEATURE_SIDEBAND) */
-	printf("  --cpu none|auto|f/m[/s]   set cpu to the given value and decode according to:\n");
+	printf("  --cpu none|f/m[/s]        set cpu to the given value and decode according to:\n");
 	printf("                              none     spec (default)\n");
-	printf("                              auto     current cpu\n");
 	printf("                              f/m[/s]  family/model[/stepping]\n");
 	printf("  --mtc-freq <n>            set the MTC frequency (IA32_RTIT_CTL[17:14]) to <n>.\n");
 	printf("  --nom-freq <n>            set the nominal frequency (MSR_PLATFORM_INFO[15:8]) to <n>.\n");
@@ -600,7 +599,9 @@ static int print_raw(struct ptdump_buffer *buffer, uint64_t offset,
 	bend = bbegin + sizeof(buffer->raw);
 
 	for (; begin < end; ++begin, bbegin += len) {
-		len = snprintf(bbegin, bend - bbegin, "%02x", *begin);
+		size_t size = (size_t) ((uintptr_t) bend - (uintptr_t) bbegin);
+
+		len = snprintf(bbegin, size, "%02x", *begin);
 		if (len != 2)
 			return diag("truncating raw packet", offset, 0);
 	}
@@ -1834,18 +1835,6 @@ static int process_args(int argc, char *argv[],
 					"%s: --cpu: missing argument.\n",
 					argv[0]);
 				return -1;
-			}
-
-			if (strcmp(arg, "auto") == 0) {
-				errcode = pt_cpu_read(&config->cpu);
-				if (errcode < 0) {
-					fprintf(stderr,
-						"%s: error reading cpu: %s.\n",
-						argv[0],
-						pt_errstr(pt_errcode(errcode)));
-					return -1;
-				}
-				continue;
 			}
 
 			if (strcmp(arg, "none") == 0) {

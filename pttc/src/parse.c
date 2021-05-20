@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2019, Intel Corporation
+ * Copyright (c) 2013-2021, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -279,7 +279,7 @@ static char *expfilename(struct parser *p, const char *extra)
 
 	pfname[len] = 0;
 
-	return memcpy(pfname, filename, len);
+	return memcpy(pfname, filename, (size_t) len);
 }
 
 /* Returns true if @c is part of a label; false otherwise.  */
