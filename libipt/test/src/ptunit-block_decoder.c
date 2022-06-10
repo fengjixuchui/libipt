@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021, Intel Corporation
+ * Copyright (c) 2019-2022, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -75,6 +75,8 @@ static struct ptunit_result decoder_init_null(void)
 	struct pt_block_decoder decoder;
 	struct pt_config config;
 	int errcode;
+
+	memset(&config, 0, sizeof(config));
 
 	errcode = pt_blk_decoder_init(NULL, &config);
 	ptu_int_eq(errcode, -pte_internal);
