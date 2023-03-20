@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2022, Intel Corporation
+ * Copyright (c) 2013-2023, Intel Corporation
+ * SPDX-License-Identifier: BSD-3-Clause
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -1228,7 +1229,8 @@ static inline int insn_to_user(struct pt_insn *uinsn, size_t size,
 
 	/* Zero out any unknown bytes. */
 	if (sizeof(*insn) < size) {
-		memset(uinsn + sizeof(*insn), 0, size - sizeof(*insn));
+		memset(((uint8_t *) uinsn) + sizeof(*insn), 0,
+		       size - sizeof(*insn));
 
 		size = sizeof(*insn);
 	}

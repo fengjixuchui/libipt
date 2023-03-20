@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2018-2022, Intel Corporation
+ * Copyright (c) 2018-2023, Intel Corporation
+ * SPDX-License-Identifier: BSD-3-Clause
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -3116,7 +3117,7 @@ static inline int pt_evt_to_user(struct pt_event *uev, size_t size,
 
 	/* Zero out any unknown bytes. */
 	if (sizeof(*ev) < size) {
-		memset(uev + sizeof(*ev), 0, size - sizeof(*ev));
+		memset(((uint8_t *) uev) + sizeof(*ev), 0, size - sizeof(*ev));
 
 		size = sizeof(*ev);
 	}

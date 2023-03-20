@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2022, Intel Corporation
+ * Copyright (c) 2013-2023, Intel Corporation
+ * SPDX-License-Identifier: BSD-3-Clause
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -759,6 +760,7 @@ static void check_insn_iclass(const xed_inst_t *inst,
 		case XED_ICLASS_IRETD:
 		case XED_ICLASS_IRETQ:
 		case XED_ICLASS_SYSRET:
+		case XED_ICLASS_SYSRET64:
 		case XED_ICLASS_SYSRET_AMD:
 		case XED_ICLASS_SYSEXIT:
 		case XED_ICLASS_VMLAUNCH:
@@ -792,6 +794,7 @@ static void check_insn_iclass(const xed_inst_t *inst,
 		case XED_ICLASS_IRETD:
 		case XED_ICLASS_IRETQ:
 		case XED_ICLASS_SYSRET:
+		case XED_ICLASS_SYSRET64:
 		case XED_ICLASS_SYSRET_AMD:
 		case XED_ICLASS_SYSEXIT:
 		case XED_ICLASS_VMLAUNCH:

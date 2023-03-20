@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2022, Intel Corporation
+ * Copyright (c) 2013-2023, Intel Corporation
+ * SPDX-License-Identifier: BSD-3-Clause
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -548,9 +549,8 @@ error:
 
 	fclose(f);
 	if (errcode < 0 && errcode != -err_out_of_range) {
-		fprintf(stderr, "fatal: %s could not be created:\n", filename);
+		fprintf(stderr, "fatal: error generating %s:\n", filename);
 		yasm_print_err(p->y, "", errcode);
-		remove(filename);
 	} else
 		printf("%s\n", filename);
 	free(filename);

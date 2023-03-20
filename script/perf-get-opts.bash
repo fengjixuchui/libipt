@@ -1,6 +1,7 @@
 #! /bin/bash
 #
-# Copyright (c) 2015-2022, Intel Corporation
+# Copyright (c) 2015-2023, Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -206,8 +207,18 @@ if [[ -n "$kcore" ]]; then
         '
 fi
 
-for sbfile in $(ls -1 "$(basename $file)"-sideband*.pevent 2>/dev/null); do
-    if [[ -z "$master" || "$sbfile" == "$master" ]]; then
+fbase="$(basename "$file")"
+mbase="$(basename "$master")"
+sdir="$(dirname "$master")"
+if [[ "$mbase" == "$master" ]]; then
+    sdir="$(dirname "$file")"
+fi
+for sbfile in "$sdir/$fbase"-sideband*.pevent; do
+    if [[ ! -e "$sbfile" ]]; then
+        break
+    fi
+
+    if [[ -z "$master" || "$sbfile" == "$sdir/$mbase" ]]; then
         echo -n " --pevent:primary $sbfile"
     else
         echo -n " --pevent:secondary $sbfile"

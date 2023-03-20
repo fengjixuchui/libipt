@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2014-2022, Intel Corporation
+ * Copyright (c) 2014-2023, Intel Corporation
+ * SPDX-License-Identifier: BSD-3-Clause
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -222,7 +223,8 @@ static inline int pkt_to_user(struct pt_packet *upkt, size_t size,
 
 	/* Zero out any unknown bytes. */
 	if (sizeof(*pkt) < size) {
-		memset(upkt + sizeof(*pkt), 0, size - sizeof(*pkt));
+		memset(((uint8_t *) upkt) + sizeof(*pkt), 0,
+		       size - sizeof(*pkt));
 
 		size = sizeof(*pkt);
 	}

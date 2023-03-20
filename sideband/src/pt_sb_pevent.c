@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2017-2022, Intel Corporation
+ * Copyright (c) 2017-2023, Intel Corporation
+ * SPDX-License-Identifier: BSD-3-Clause
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -1640,7 +1641,7 @@ static int pt_sb_pevent_apply(struct pt_sb_session *session,
 		}
 
 		break;
-	};
+	}
 
 	return 0;
 }

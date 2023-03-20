@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2022, Intel Corporation
+ * Copyright (c) 2013-2023, Intel Corporation
+ * SPDX-License-Identifier: BSD-3-Clause
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -1450,7 +1451,8 @@ struct pt_event {
 
 		/** Event: tick. */
 		struct {
-			/** The instruction address near which the tick occured.
+			/** The instruction address near which the tick
+			 *  occurred.
 			 *
 			 * A timestamp can sometimes be attributed directly to
 			 * an instruction (e.g. to an indirect branch that
