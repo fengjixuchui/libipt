@@ -81,8 +81,10 @@ struct ptdump_options {
 	/* Show timing information as delta to the previous value. */
 	uint32_t show_time_as_delta:1;
 
+#if (LIBIPT_VERSION >= 0x201)
 	/* Preserve timing calibration on overflow. */
 	uint32_t keep_tcal_on_ovf:1;
+#endif
 
 	/* Quiet mode: Don't print anything but errors. */
 	uint32_t quiet:1;
@@ -218,7 +220,9 @@ static int help(const char *name)
 	printf("  --no-tcal                 skip timing calibration.\n");
 	printf("                            this will result in errors when CYC packets are encountered.\n");
 	printf("  --no-wall-clock           suppress the no-time error and print relative time.\n");
+#if (LIBIPT_VERSION >= 0x201)
 	printf("  --keep-tcal-on-ovf        preserve timing calibration on overflow.\n");
+#endif
 #if defined(FEATURE_SIDEBAND)
 	printf("  --sb:compact | --sb       show sideband records in compact format.\n");
 	printf("  --sb:verbose              show sideband records in verbose format.\n");
@@ -1099,6 +1103,7 @@ static int print_packet(struct ptdump_buffer *buffer, uint64_t offset,
 		print_field(buffer->opcode, "ovf");
 
 		if (options->track_time) {
+#if (LIBIPT_VERSION >= 0x201)
 			if (options->keep_tcal_on_ovf) {
 				int errcode;
 
@@ -1108,6 +1113,7 @@ static int print_packet(struct ptdump_buffer *buffer, uint64_t offset,
 					diag("error calibrating time",
 					     offset, errcode);
 			} else
+#endif
 				pt_tcal_init(&tracking->tcal);
 		}
 
@@ -1196,9 +1202,16 @@ static int print_packet(struct ptdump_buffer *buffer, uint64_t offset,
 			sep = csd[0] && csl[0] ? ", " : "";
 
 			print_field(buffer->opcode, "mode.exec");
+#if (LIBIPT_VERSION < 0x201)
 			print_field(buffer->payload.standard, "%s%s%s",
 				    csd, sep, csl);
-
+#else
+			print_field(buffer->payload.standard, "%s%s%s%s%s",
+				    csd, sep, csl,
+				    mode->bits.exec.iflag &&
+				    (csd[0] || csl[0]) ? ", " : "",
+				    mode->bits.exec.iflag ? "if" : "");
+#endif
 			if (options->show_exec_mode) {
 				const char *em;
 
@@ -1349,6 +1362,60 @@ static int print_packet(struct ptdump_buffer *buffer, uint64_t offset,
 			    packet->payload.ptw.ip ? ", ip" : "");
 
 		return 0;
+
+#if (LIBIPT_VERSION >= 0x201)
+	case ppt_cfe:
+		print_field(buffer->opcode, "cfe");
+
+		switch (packet->payload.cfe.type) {
+		case pt_cfe_intr:
+		case pt_cfe_vmexit_intr:
+		case pt_cfe_uintr:
+			print_field(buffer->payload.standard, "%u: %u%s",
+				    packet->payload.cfe.type,
+				    packet->payload.cfe.vector,
+				    packet->payload.cfe.ip ? ", ip" : "");
+			return 0;
+
+		case pt_cfe_sipi:
+			print_field(buffer->payload.standard, "%u: %x%s",
+				    packet->payload.cfe.type,
+				    packet->payload.cfe.vector,
+				    packet->payload.cfe.ip ? ", ip" : "");
+			return 0;
+
+		case pt_cfe_iret:
+		case pt_cfe_smi:
+		case pt_cfe_rsm:
+		case pt_cfe_init:
+		case pt_cfe_vmentry:
+		case pt_cfe_vmexit:
+		case pt_cfe_shutdown:
+		case pt_cfe_uiret:
+			print_field(buffer->payload.standard, "%u%s",
+				    packet->payload.cfe.type,
+				    packet->payload.cfe.ip ? ", ip" : "");
+			return 0;
+		}
+
+		return diag("unknown cfe type", offset, -pte_bad_packet);
+
+	case ppt_evd:
+		print_field(buffer->opcode, "evd");
+		print_field(buffer->payload.standard, "%u: %" PRIx64,
+			    packet->payload.evd.type,
+			    packet->payload.evd.payload);
+
+		switch (packet->payload.evd.type) {
+		case pt_evd_cr2:
+		case pt_evd_vmxq:
+		case pt_evd_vmxr:
+			return 0;
+		}
+
+		return diag("unknown evd type", offset, -pte_bad_packet);
+
+#endif /* (LIBIPT_VERSION >= 0x201) */
 	}
 
 	return diag("unknown packet", offset, -pte_bad_opc);
@@ -1737,8 +1804,10 @@ static int process_args(int argc, char *argv[],
 			options->no_tcal = 1;
 		else if (strcmp(argv[idx], "--no-wall-clock") == 0)
 			options->no_wall_clock = 1;
+#if (LIBIPT_VERSION >= 0x201)
 		else if (strcmp(argv[idx], "--keep-tcal-on-ovf") == 0)
 			options->keep_tcal_on_ovf = 1;
+#endif
 #if defined(FEATURE_SIDEBAND)
 		else if ((strcmp(argv[idx], "--sb:compact") == 0) ||
 			 (strcmp(argv[idx], "--sb") == 0)) {

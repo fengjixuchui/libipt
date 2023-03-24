@@ -1543,6 +1543,85 @@ static int ploc_from_event(enum pt_sb_pevent_loc *loc,
 
 	case ptev_tip:
 		return ploc_from_ip(loc, priv, event->variant.tip.ip);
+
+#if (LIBIPT_VERSION >= 0x201)
+	case ptev_iflags:
+		if (!event->ip_suppressed)
+			return ploc_from_ip(loc, priv,
+					    event->variant.iflags.ip);
+
+		break;
+
+	case ptev_interrupt:
+		if (!event->ip_suppressed)
+			return ploc_from_ip(loc, priv,
+					    event->variant.interrupt.ip);
+
+		break;
+
+	case ptev_iret:
+		if (!event->ip_suppressed)
+			return ploc_from_ip(loc, priv,
+					    event->variant.iret.ip);
+
+		break;
+
+	case ptev_smi:
+		if (!event->ip_suppressed)
+			return ploc_from_ip(loc, priv,
+					    event->variant.smi.ip);
+
+		break;
+
+	case ptev_rsm:
+		if (!event->ip_suppressed)
+			return ploc_from_ip(loc, priv,
+					    event->variant.rsm.ip);
+
+		break;
+
+	case ptev_init:
+		if (!event->ip_suppressed)
+			return ploc_from_ip(loc, priv,
+					    event->variant.init.ip);
+
+		break;
+
+	case ptev_vmentry:
+		if (!event->ip_suppressed)
+			return ploc_from_ip(loc, priv,
+					    event->variant.vmentry.ip);
+
+		break;
+
+	case ptev_vmexit:
+		if (!event->ip_suppressed)
+			return ploc_from_ip(loc, priv,
+					    event->variant.vmexit.ip);
+
+		break;
+
+	case ptev_shutdown:
+		if (!event->ip_suppressed)
+			return ploc_from_ip(loc, priv,
+					    event->variant.shutdown.ip);
+
+		break;
+
+	case ptev_uintr:
+		if (!event->ip_suppressed)
+			return ploc_from_ip(loc, priv,
+					    event->variant.uintr.ip);
+
+		break;
+
+	case ptev_uiret:
+		if (!event->ip_suppressed)
+			return ploc_from_ip(loc, priv,
+					    event->variant.uiret.ip);
+
+		break;
+#endif
 	}
 
 	*loc = ploc_unknown;

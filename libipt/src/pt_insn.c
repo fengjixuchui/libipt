@@ -171,6 +171,60 @@ int pt_insn_is_ptwrite(const struct pt_insn *insn,
 	}
 }
 
+int pt_insn_is_iret(const struct pt_insn *insn,
+		    const struct pt_insn_ext *iext)
+{
+	(void) insn;
+
+	if (!iext)
+		return 0;
+
+	switch (iext->iclass) {
+	default:
+		return 0;
+
+	case PTI_INST_IRET:
+	case PTI_INST_SYSRET:
+	case PTI_INST_SYSEXIT:
+		return 1;
+	}
+}
+
+int pt_insn_is_vmentry(const struct pt_insn *insn,
+		       const struct pt_insn_ext *iext)
+{
+	(void) insn;
+
+	if (!iext)
+		return 0;
+
+	switch (iext->iclass) {
+	default:
+		return 0;
+
+	case PTI_INST_VMLAUNCH:
+	case PTI_INST_VMRESUME:
+		return 1;
+	}
+}
+
+int pt_insn_is_uiret(const struct pt_insn *insn,
+		     const struct pt_insn_ext *iext)
+{
+	(void) insn;
+
+	if (!iext)
+		return 0;
+
+	switch (iext->iclass) {
+	default:
+		return 0;
+
+	case PTI_INST_UIRET:
+		return 1;
+	}
+}
+
 int pt_insn_next_ip(uint64_t *pip, const struct pt_insn *insn,
 		    const struct pt_insn_ext *iext)
 {

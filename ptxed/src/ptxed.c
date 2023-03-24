@@ -252,6 +252,7 @@ static void help(const char *name)
 	printf("  --event:time                         print the tsc for events if available.\n");
 	printf("  --event:ip                           print the ip of events if available.\n");
 	printf("  --event:tick                         request tick events.\n");
+	printf("  --event:iflags                       request iflags events.\n");
 	printf("  --filter:addr<n>_cfg <cfg>           set IA32_RTIT_CTL.ADDRn_CFG to <cfg>.\n");
 	printf("  --filter:addr<n>_a <base>            set IA32_RTIT_ADDRn_A to <base>.\n");
 	printf("  --filter:addr<n>_b <limit>           set IA32_RTIT_ADDRn_B to <limit>.\n");
@@ -303,12 +304,16 @@ static void help(const char *name)
 	printf("  --cpuid-0x15.eax                     set the value of cpuid[0x15].eax.\n");
 	printf("  --cpuid-0x15.ebx                     set the value of cpuid[0x15].ebx.\n");
 	printf("  --insn-decoder                       use the instruction flow decoder.\n");
+#if (LIBIPT_VERSION >= 0x201)
 	printf("  --insn:keep-tcal-on-ovf              preserve timing calibration on overflow.\n");
+#endif
 	printf("  --block-decoder                      use the block decoder (default).\n");
 	printf("  --block:show-blocks                  show blocks in the output.\n");
 	printf("  --block:end-on-call                  set the end-on-call block decoder flag.\n");
 	printf("  --block:end-on-jump                  set the end-on-jump block decoder flag.\n");
+#if (LIBIPT_VERSION >= 0x201)
 	printf("  --block:keep-tcal-on-ovf             preserve timing calibration on overflow.\n");
+#endif
 	printf("\n");
 #if defined(FEATURE_ELF)
 	printf("You must specify at least one binary or ELF file (--raw|--elf).\n");
@@ -617,9 +622,13 @@ static xed_machine_mode_enum_t translate_mode(enum pt_exec_mode mode)
 static const char *visualize_iclass(enum pt_insn_class iclass)
 {
 	switch (iclass) {
+#if (LIBIPT_VERSION >= 0x201)
 	case ptic_unknown:
 		return "unknown";
-
+#else
+	case ptic_error:
+		return "error";
+#endif
 	case ptic_other:
 		return "other";
 
@@ -647,8 +656,10 @@ static const char *visualize_iclass(enum pt_insn_class iclass)
 	case ptic_ptwrite:
 		return "ptwrite";
 
+#if (LIBIPT_VERSION >= 0x201)
 	case ptic_indirect:
 		return "indirect";
+#endif
 	}
 
 	return "undefined";
@@ -669,9 +680,13 @@ static void check_insn_iclass(const xed_inst_t *inst,
 	iclass = xed_inst_iclass(inst);
 
 	switch (insn->iclass) {
+#if (LIBIPT_VERSION >= 0x201)
 	case ptic_unknown:
 		break;
-
+#else
+	case ptic_error:
+		break;
+#endif
 	case ptic_ptwrite:
 	case ptic_other:
 		switch (category) {
@@ -765,6 +780,7 @@ static void check_insn_iclass(const xed_inst_t *inst,
 		case XED_ICLASS_SYSEXIT:
 		case XED_ICLASS_VMLAUNCH:
 		case XED_ICLASS_VMRESUME:
+		case XED_ICLASS_UIRET:
 			return;
 		}
 		break;
@@ -775,6 +791,7 @@ static void check_insn_iclass(const xed_inst_t *inst,
 
 		break;
 
+#if (LIBIPT_VERSION >= 0x201)
 	case ptic_indirect:
 		switch (iclass) {
 		default:
@@ -804,7 +821,7 @@ static void check_insn_iclass(const xed_inst_t *inst,
 			return;
 		}
 		break;
-
+#endif /* (LIBIPT_VERSION >= 0x201) */
 	}
 
 	/* If we get here, @insn->iclass doesn't match XED's classification. */
@@ -1187,6 +1204,7 @@ static void print_event(const struct pt_event *event,
 		printf("mnt: %" PRIx64, event->variant.mnt.payload);
 		break;
 
+#if (LIBIPT_VERSION >= 0x201)
 	case ptev_tip:
 		printf("tip: %" PRIx64, event->variant.tip.ip);
 		break;
@@ -1200,6 +1218,115 @@ static void print_event(const struct pt_event *event,
 			       (event->variant.tnt.bits & index) ? "!" : ".");
 	}
 		break;
+
+	case ptev_iflags:
+		printf("interrupts %s",
+		       event->variant.iflags.iflag ? "enabled" : "disabled");
+
+		if (options->print_event_ip && !event->ip_suppressed)
+			printf(", ip: %016" PRIx64,
+			       event->variant.iflags.ip);
+		break;
+
+	case ptev_interrupt:
+		printf("interrupt %u", event->variant.interrupt.vector);
+
+		if (event->variant.interrupt.has_cr2)
+			printf(", cr2: %016" PRIx64,
+			       event->variant.interrupt.cr2);
+
+		if (options->print_event_ip && !event->ip_suppressed)
+			printf(", ip: %016" PRIx64,
+			       event->variant.interrupt.ip);
+		break;
+
+	case ptev_iret:
+		printf("iret");
+
+		if (options->print_event_ip && !event->ip_suppressed)
+			printf(", ip: %016" PRIx64,
+			       event->variant.iret.ip);
+		break;
+
+	case ptev_smi:
+		printf("smi");
+
+		if (options->print_event_ip && !event->ip_suppressed)
+			printf(", ip: %016" PRIx64,
+			       event->variant.smi.ip);
+		break;
+
+	case ptev_rsm:
+		printf("rsm");
+
+		if (options->print_event_ip && !event->ip_suppressed)
+			printf(", ip: %016" PRIx64,
+			       event->variant.rsm.ip);
+		break;
+
+	case ptev_sipi:
+		printf("sipi: %x", event->variant.sipi.vector);
+		break;
+
+	case ptev_init:
+		printf("init");
+
+		if (options->print_event_ip && !event->ip_suppressed)
+			printf(", ip: %016" PRIx64,
+			       event->variant.init.ip);
+		break;
+
+	case ptev_vmentry:
+		printf("vmentry");
+
+		if (options->print_event_ip && !event->ip_suppressed)
+			printf(", ip: %016" PRIx64,
+			       event->variant.vmentry.ip);
+		break;
+
+	case ptev_vmexit:
+		printf("vmexit");
+
+		if (event->variant.vmexit.has_vector)
+			printf(", intr: %u", event->variant.vmexit.vector);
+
+		if (event->variant.vmexit.has_vmxr)
+			printf(", vmxr: %016" PRIx64,
+			       event->variant.vmexit.vmxr);
+
+		if (event->variant.vmexit.has_vmxq)
+			printf(", vmxq: %016" PRIx64,
+			       event->variant.vmexit.vmxq);
+
+		if (options->print_event_ip && !event->ip_suppressed)
+			printf(", ip: %016" PRIx64,
+			       event->variant.vmexit.ip);
+		break;
+
+	case ptev_shutdown:
+		printf("shutdown");
+
+		if (options->print_event_ip && !event->ip_suppressed)
+			printf(", ip: %016" PRIx64,
+			       event->variant.shutdown.ip);
+		break;
+
+	case ptev_uintr:
+		printf("uintr %u", event->variant.uintr.vector);
+
+		if (options->print_event_ip && !event->ip_suppressed)
+			printf(", ip: %016" PRIx64,
+			       event->variant.uintr.ip);
+		break;
+
+	case ptev_uiret:
+		printf("uiret");
+
+		if (options->print_event_ip && !event->ip_suppressed)
+			printf(", ip: %016" PRIx64,
+			       event->variant.uiret.ip);
+		break;
+#endif
 	}
 
 	printf("]\n");
@@ -1387,7 +1514,12 @@ static void decode_insn(struct ptxed_decoder *decoder,
 				/* Even in case of errors, we may have succeeded
 				 * in decoding the current instruction.
 				 */
-				if (insn.iclass != ptic_unknown) {
+#if (LIBIPT_VERSION >= 0x201)
+				if (insn.iclass != ptic_unknown)
+#else
+				if (insn.iclass != ptic_error)
+#endif
+				{
 					if (!options->quiet)
 						print_insn(&insn, &xed, options,
 							   offset, time);
@@ -2361,6 +2493,14 @@ extern int main(int argc, char *argv[])
 
 			continue;
 		}
+		if (strcmp(arg, "--event:iflags") == 0) {
+			decoder.block.flags.variant.block.
+				enable_iflags_events = 1;
+			decoder.insn.flags.variant.insn.
+				enable_iflags_events = 1;
+
+			continue;
+		}
 		if (strcmp(arg, "--filter:addr0_cfg") == 0) {
 			if (ptxed_have_decoder(&decoder)) {
 				fprintf(stderr,
@@ -2822,11 +2962,12 @@ extern int main(int argc, char *argv[])
 			continue;
 		}
 
+#if (LIBIPT_VERSION >= 0x201)
 		if (strcmp(arg, "--insn:keep-tcal-on-ovf") == 0) {
 			decoder.insn.flags.variant.insn.keep_tcal_on_ovf = 1;
 			continue;
 		}
-
+#endif
 
 		if (strcmp(arg, "--block-decoder") == 0) {
 			if (ptxed_have_decoder(&decoder)) {
@@ -2855,11 +2996,12 @@ extern int main(int argc, char *argv[])
 			continue;
 		}
 
+#if (LIBIPT_VERSION >= 0x201)
 		if (strcmp(arg, "--block:keep-tcal-on-ovf") == 0) {
 			decoder.block.flags.variant.block.keep_tcal_on_ovf = 1;
 			continue;
 		}
-
+#endif
 		fprintf(stderr, "%s: unknown option: %s.\n", prog, arg);
 		goto err;
 	}
